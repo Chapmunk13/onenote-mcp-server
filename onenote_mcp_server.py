@@ -49,6 +49,10 @@ def get_client_id() -> str:
         raise Exception("AZURE_CLIENT_ID environment variable not set")
     return client_id
 
+def get_tenant_id() -> str:
+    """Get the Azure tenant ID from environment variable, defaults to 'common' for multi-tenant."""
+    return os.getenv("AZURE_TENANT_ID", "common")
+
 def save_tokens(access_tok: str, refresh_tok: str = None, expires_in: int = 3600) -> None:
     """Save tokens to disk for persistence across sessions."""
     global access_token, refresh_token, token_expires_at
@@ -197,10 +201,12 @@ async def manual_token_refresh() -> bool:
 
 def init_msal_app(client_id: str) -> PublicClientApplication:
     """Initialize MSAL application for authentication."""
-    # Create a simple in-memory cache for MSAL
+    tenant_id = get_tenant_id()
+    authority = f"https://login.microsoftonline.com/{tenant_id}"
+    logger.info(f"Initializing MSAL app with tenant: {tenant_id}")
     return PublicClientApplication(
         client_id=client_id,
-        authority="https://login.microsoftonline.com/common"
+        authority=authority
     )
 
 async def ensure_valid_token() -> bool:
